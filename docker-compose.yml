@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  bot:
+    restart: unless-stopped
+    build:
+      context: .
+    ports:
+      - "3323:3323"
