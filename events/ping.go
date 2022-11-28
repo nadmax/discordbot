@@ -1,19 +1,16 @@
 package events
 
 import (
-	"github.com/disgoorg/disgo/discord"
-	"github.com/disgoorg/disgo/events"
+	"fmt"
+
+	"github.com/bwmarrin/discordgo"
 )
 
-func Ping(event *events.ApplicationCommandInteractionCreate) {
-	data := event.SlashCommandInteractionData()
-
-	if data.CommandName() == "ping" {
-		if err := event.CreateMessage(discord.NewMessageCreateBuilder().
-			SetContent("pong").
-			Build(),
-		); err != nil {
-			event.Client().Logger().Error("error on sending response: ", err)
-		}
-	}
+func Ping(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("🏓API latency is %v ms.", s.LastHeartbeatSent.Second()),
+		},
+	})
 }

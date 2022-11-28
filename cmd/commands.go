@@ -1,13 +1,13 @@
 package cmd
 
-import "github.com/disgoorg/disgo/discord"
+import "github.com/bwmarrin/discordgo"
 
-func RegisterCommands() []discord.ApplicationCommandCreate {
-	return []discord.ApplicationCommandCreate{
-		discord.SlashCommandCreate{
-			Name:        "ping",
-			Description: "ping bot",
-			Options: nil,
+
+func SetCommands() []*discordgo.ApplicationCommand {
+	return []*discordgo.ApplicationCommand {
+		{
+			Name: "ping",
+			Description: "Send a request to bot",
 		},
 	}
 }

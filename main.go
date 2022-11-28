@@ -2,48 +2,48 @@ package main
 
 import (
 	"discordbot/cmd"
-	"discordbot/events"
-	
-	"strconv"
-	"context"
-	"os"
-	"os/signal"
 	"syscall"
 
-	"github.com/disgoorg/disgo"
-	"github.com/disgoorg/disgo/bot"
-	"github.com/disgoorg/log"
-	"github.com/disgoorg/snowflake/v2"
+	"log"
+	"os"
+	"os/signal"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func main() {
-	log.SetLevel(log.LevelInfo)
 
-	id, _ := strconv.Atoi(os.Getenv("GUILD_ID"))
-	guildID := snowflake.ID(id)
-
-	client, err := disgo.New(
-		os.Getenv("TOKEN"),
-		bot.WithDefaultGateway(),
-		bot.WithEventListenerFunc(events.Ping),
-	)
+	dg, err := discordgo.New("Bot " + os.Getenv("TOKEN"))
+	
 	if err != nil {
-		log.Fatal("error while building disgo instance: ", err)
-		return
+		log.Fatalf("error while creating app: %v", err)
 	}
 
-	defer client.Close(context.TODO())
+	dg.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if h, ok := cmd.HandleCommands()[i.ApplicationCommandData().Name]; ok {
+			h(s, i)
+		}
+	})
+	
+	if err := dg.Open(); err != nil {
+		log.Fatalf("cannot open session: %v", err)
+	}
+	
+	defer dg.Close()
+	
+	log.Println("Adding commands...")
+	commands := cmd.SetCommands()
 
-	if _, err = client.Rest().SetGuildCommands(client.ApplicationID(), guildID, cmd.RegisterCommands()); err != nil {
-		log.Fatal("error while registering commands: ", err)
+	for _, v := range commands {
+		if _, err := dg.ApplicationCommandCreate(dg.State.User.ID, os.Getenv("GUILD_ID"), v); err != nil {
+			log.Panicf("cannot create '%v' command: %v", v.Name, err)
+		}
 	}
 
-	if err = client.OpenGateway(context.TODO()); err != nil {
-		log.Fatal("error while connecting to gateway: ", err)
-	}
-
-	log.Infof("Application is now running. Press CTRL-C to exit.")
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	log.Println("Application is running. Press Ctrl+C to exit.")
 	<-s
+
+	log.Println("Application has been successfully stopped.")
 }
